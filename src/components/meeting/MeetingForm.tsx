@@ -16,14 +16,21 @@ import {
   ActionItem,
   MEETING_TYPE_LABELS
 } from '../../types/meeting';
+import { HiyariHatReport } from '../../types';
+import { RiskAssessmentItem } from '../../types/ra';
+import { AnnualSafetyPlan } from '../../types/plan';
+import { suggestMeetingAgenda } from '../../services/geminiService';
 
 interface MeetingFormProps {
   onSubmit: (meeting: SafetyMeeting) => void;
   onCancel: () => void;
   initialData?: SafetyMeeting;
+  reports?: HiyariHatReport[];
+  annualPlan?: AnnualSafetyPlan;
+  raItems?: RiskAssessmentItem[];
 }
 
-export function MeetingForm({ onSubmit, onCancel, initialData }: MeetingFormProps) {
+export function MeetingForm({ onSubmit, onCancel, initialData, reports = [], annualPlan, raItems = [] }: MeetingFormProps) {
   const isEditing = !!initialData;
 
   const [formData, setFormData] = useState({
@@ -47,6 +54,7 @@ export function MeetingForm({ onSubmit, onCancel, initialData }: MeetingFormProp
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [isGeneratingAgenda, setIsGeneratingAgenda] = useState(false);
   const [aiSummary, setAiSummary] = useState(initialData?.aiSummary || '');
   const [aiSuggestions, setAiSuggestions] = useState<string[]>(
     initialData?.aiImprovementSuggestions || []
@@ -56,6 +64,32 @@ export function MeetingForm({ onSubmit, onCancel, initialData }: MeetingFormProp
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  // AIによる議題提案
+  const handleSuggestAgenda = async () => {
+    if (!annualPlan) return;
+
+    setIsGeneratingAgenda(true);
+    try {
+      const suggestion = await suggestMeetingAgenda(annualPlan, reports, raItems);
+      if (suggestion && suggestion.agendaItems) {
+        const newItems: AgendaItem[] = suggestion.agendaItems.map((item, index) => ({
+          id: `agenda-ai-${Date.now()}-${index}`,
+          title: item.title,
+          presenter: item.presenter,
+          duration: item.duration,
+          content: `${item.content}\n\n【選定理由】${item.reason}`,
+          discussion: '',
+          result: ''
+        }));
+        setAgendaItems(prev => [...prev, ...newItems]);
+      }
+    } catch (error) {
+      console.error('Failed to generate agenda:', error);
+    } finally {
+      setIsGeneratingAgenda(false);
     }
   };
 
@@ -300,13 +334,23 @@ export function MeetingForm({ onSubmit, onCancel, initialData }: MeetingFormProp
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-gray-900">議題</h2>
-          <button
-            onClick={addAgendaItem}
-            className="flex items-center gap-1 px-3 py-1.5 text-sm bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            追加
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleSuggestAgenda}
+              disabled={isGeneratingAgenda || !annualPlan}
+              className="flex items-center gap-1 px-3 py-1.5 text-sm bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors disabled:opacity-50"
+            >
+              <Sparkles className="w-4 h-4" />
+              {isGeneratingAgenda ? 'AI生成中...' : 'AIで議題を提案'}
+            </button>
+            <button
+              onClick={addAgendaItem}
+              className="flex items-center gap-1 px-3 py-1.5 text-sm bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              追加
+            </button>
+          </div>
         </div>
 
         {agendaItems.length === 0 ? (

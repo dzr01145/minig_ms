@@ -685,6 +685,83 @@ ${previousYearReview ? `【前年度の振り返り】${previousYearReview}` : '
   }
 }
 
+// 会議議題提案
+export interface AgendaSuggestion {
+  agendaItems: Array<{
+    title: string;
+    presenter: string;
+    duration: number;
+    content: string;
+    priority: 'high' | 'medium' | 'low';
+    reason: string;
+  }>;
+}
+
+export async function suggestMeetingAgenda(
+  annualPlan: any,
+  recentReports: any[],
+  raItems: any[]
+): Promise<AgendaSuggestion | null> {
+  setCurrentFeature('agenda-suggestion');
+
+  // データの要約（トークン数節約のため）
+  const planSummary = JSON.stringify({
+    fiscalYear: annualPlan.fiscalYear,
+    delayedItems: annualPlan.planItems.filter((i: any) => {
+      const currentMonth = new Date().getMonth() + 1;
+      return i.schedule.some((s: any) => s.month <= currentMonth && !s.completed);
+    }).map((i: any) => ({ title: i.title, status: 'delayed' }))
+  });
+
+  const reportSummary = JSON.stringify(recentReports.slice(0, 5).map((r: any) => ({
+    type: r.type,
+    description: r.description.substring(0, 50),
+    severity: r.severity
+  })));
+
+  const raSummary = JSON.stringify(raItems.filter((i: any) => i.riskLevel >= 10).slice(0, 5).map((i: any) => ({
+    hazard: i.hazardSource,
+    riskLevel: i.riskLevel
+  })));
+
+  const prompt = `あなたは鉱山保安会議の議長補佐です。以下のデータに基づいて、今回の会議で議論すべき議題を提案してください。
+優先順位（priority）は、災害リスクの高さや計画の遅れ具合に基づいて決定してください。
+
+【年間計画状況】
+${planSummary}
+
+【最近の災害・ヒヤリハット】
+${reportSummary}
+
+【高リスクRA項目】
+${raSummary}
+
+以下のJSON形式で回答してください：
+\`\`\`json
+{
+  "agendaItems": [
+    {
+      "title": "議題タイトル",
+      "presenter": "推奨される発表者（例：安全管理者、担当者）",
+      "duration": 所要時間（分）,
+      "content": "議論すべき具体的な内容",
+      "priority": "high/medium/low",
+      "reason": "この議題を選定した理由"
+    }
+  ]
+}
+\`\`\``;
+
+  try {
+    const response = await callAI(prompt);
+    if (!response) return null;
+    return parseJSONResponse<AgendaSuggestion>(response);
+  } catch (error) {
+    console.error('Failed to suggest agenda:', error);
+    return null;
+  }
+}
+
 // 汎用的なテキスト生成
 export async function generateText(prompt: string, feature: string = 'general'): Promise<string | null> {
   setCurrentFeature(feature);

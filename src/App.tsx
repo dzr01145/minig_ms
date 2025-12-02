@@ -266,6 +266,9 @@ function App() {
           <MeetingForm
             onSubmit={handleSubmitMeeting}
             onCancel={() => setCurrentPage('meeting')}
+            reports={reports}
+            annualPlan={annualPlan}
+            raItems={raItems}
           />
         );
       case 'diagnosis-new':
