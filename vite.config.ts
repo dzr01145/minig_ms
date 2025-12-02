@@ -13,8 +13,11 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     strictPort: true,
-    hmr: {
-      clientPort: 443,
-    },
+    // HMR (Hot Module Replacement) configuration
+    // For local development, use default settings
+    // For production/remote deployment, uncomment and set clientPort
+    // hmr: {
+    //   clientPort: 443,
+    // },
   },
 })
