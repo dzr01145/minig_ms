@@ -42,9 +42,21 @@ export const AI_PROVIDERS: AIProviderConfig[] = [
     requiresKey: true,
     models: [
       {
-        id: 'gemini-2.5-pro-preview-05-06',
-        name: 'Gemini 2.5 Pro (最新)',
+        id: 'gemini-2.5-pro',
+        name: 'Gemini 2.5 Pro',
         description: '最高品質の分析・推論能力',
+        provider: 'gemini'
+      },
+      {
+        id: 'gemini-2.5-flash',
+        name: 'Gemini 2.5 Flash',
+        description: '高速・コスト効率',
+        provider: 'gemini'
+      },
+      {
+        id: 'gemini-3-pro-preview',
+        name: 'Gemini 3 Pro Preview',
+        description: '次世代プレビューモデル',
         provider: 'gemini'
       },
       {
