@@ -266,14 +266,14 @@ async function callSatelliteAPI(prompt: string, modelId: string): Promise<string
   try {
     // サテライトAI公式APIサービスをインポート
     const { ask, getSatelliteBoardId, SATELLITE_AI_PLANS } = await import('./satelliteAiService');
-    
+
     // モデルIDに対応するプランを検索
     const plan = SATELLITE_AI_PLANS.find(p => p.id === modelId || p.model.includes(modelId));
     const usePlan = plan?.id || '__geminiai_normal_high_gen_1__'; // デフォルト
-    
+
     // 既存のボードIDを取得（なければ新規作成される）
     const boardId = getSatelliteBoardId() || undefined;
-    
+
     // 質問を実行
     const result = await ask({
       boardId,
@@ -282,13 +282,13 @@ async function callSatelliteAPI(prompt: string, modelId: string): Promise<string
       language: '日本語',
       newConversation: false
     });
-    
+
     // ボードIDを保存
     if (result.board_id) {
       const { setSatelliteBoardId } = await import('./satelliteAiService');
       setSatelliteBoardId(result.board_id);
     }
-    
+
     return result.message || null;
   } catch (error) {
     console.error('Failed to call Satellite AI:', error);
@@ -354,7 +354,7 @@ async function callAI(prompt: string): Promise<string | null> {
     return response;
   } catch (err: any) {
     error = err.message || 'Unknown error';
-    
+
     // エラーログを保存
     const fullLog: AILogEntry = {
       ...logEntry,
@@ -410,7 +410,7 @@ ${workProcess ? `【作業工程】${workProcess}` : ''}
 以下のJSON形式で回答してください：
 \`\`\`json
 {
-  "accidentType": "事故の型（墜落・転落/転倒/激突/飛来・落下/崩壊・倒壊/はさまれ/巻き込まれ/切れ・こすれ/爆発/火災/有害物接触/感電/高温・低温接触/その他）",
+  "accidentType": "事故の型（墜落、転落/はさまれ、巻き込まれ/飛来、落下/転倒/激突/崩壊、倒壊/激突され/切れ、こすれ/踏み抜き/おぼれ/高温・低温の物との接触/有害物等との接触/感電/爆発/破裂/火災/交通事故（道路）/交通事故（その他）/動作の反動、無理な動作/その他/分類不能）",
   "severity": "重篤度（high/medium/low）",
   "causes": ["原因1", "原因2"],
   "preventiveMeasures": ["防止措置1", "防止措置2"],
@@ -561,14 +561,14 @@ export async function suggestImprovements(
   const prompt = `あなたは鉱山保安マネジメントシステム（MS）の専門家です。以下の自己診断結果に基づいて改善提案を行ってください。
 
 【カテゴリ別スコア】
-${Object.entries(categoryScores).map(([cat, score]) => 
-  `・${categoryLabels[cat] || cat}: ${score.rate}%（${score.score}/${score.total}点）`
-).join('\n')}
+${Object.entries(categoryScores).map(([cat, score]) =>
+    `・${categoryLabels[cat] || cat}: ${score.rate}%（${score.score}/${score.total}点）`
+  ).join('\n')}
 
 【診断結果詳細】
-${diagnosisResults.map(r => 
-  `・[${categoryLabels[r.category] || r.category}] ${r.question}: ${r.evaluation}/3点${r.comment ? ` (${r.comment})` : ''}`
-).join('\n')}
+${diagnosisResults.map(r =>
+    `・[${categoryLabels[r.category] || r.category}] ${r.question}: ${r.evaluation}/3点${r.comment ? ` (${r.comment})` : ''}`
+  ).join('\n')}
 
 PDCAサイクルの観点から、中小規模鉱山の保安担当者が実施可能な具体的な改善策を提案してください。
 

@@ -1,23 +1,55 @@
 // ヒヤリハット報告の型定義
 
 // 事故の型（3つの重点事故型 + その他）
-export type AccidentType = 
-  | 'fall' // 墜落転落
-  | 'caught' // はさまれ・巻き込まれ
-  | 'flying' // 飛来・落下
+export type AccidentType =
+  | 'fall' // 墜落、転落
+  | 'caught' // はさまれ、巻き込まれ
+  | 'flying' // 飛来、落下
   | 'trip' // 転倒
-  | 'other'; // その他
+  | 'crash' // 激突
+  | 'collapse' // 崩壊、倒壊
+  | 'hit_by' // 激突され
+  | 'cut_abrasion' // 切れ、こすれ
+  | 'step_on' // 踏み抜き
+  | 'drown' // おぼれ
+  | 'contact_temp' // 高温・低温の物との接触
+  | 'contact_harmful' // 有害物等との接触
+  | 'electric_shock' // 感電
+  | 'explosion' // 爆発
+  | 'burst' // 破裂
+  | 'fire' // 火災
+  | 'traffic_road' // 交通事故（道路）
+  | 'traffic_other' // 交通事故（その他）
+  | 'reaction' // 動作の反動、無理な動作
+  | 'other' // その他
+  | 'unclassifiable'; // 分類不能
 
 export const ACCIDENT_TYPE_LABELS: Record<AccidentType, string> = {
-  fall: '墜落転落',
-  caught: 'はさまれ・巻き込まれ',
-  flying: '飛来・落下',
+  fall: '墜落、転落',
+  caught: 'はさまれ、巻き込まれ',
+  flying: '飛来、落下',
   trip: '転倒',
+  crash: '激突',
+  collapse: '崩壊、倒壊',
+  hit_by: '激突され',
+  cut_abrasion: '切れ、こすれ',
+  step_on: '踏み抜き',
+  drown: 'おぼれ',
+  contact_temp: '高温・低温の物との接触',
+  contact_harmful: '有害物等との接触',
+  electric_shock: '感電',
+  explosion: '爆発',
+  burst: '破裂',
+  fire: '火災',
+  traffic_road: '交通事故（道路）',
+  traffic_other: '交通事故（その他）',
+  reaction: '動作の反動、無理な動作',
   other: 'その他',
+  unclassifiable: '分類不能',
 };
 
 // 発生場所
-export type Location = 
+export type Location =
   | 'drilling' // 穿孔場
   | 'blasting' // 発破場
   | 'loading' // 積込運搬
@@ -54,7 +86,7 @@ export const SEVERITY_COLORS: Record<SeverityLevel, string> = {
 };
 
 // 原因カテゴリ
-export type CauseCategory = 
+export type CauseCategory =
   | 'equipment' // 設備・機械の不備
   | 'procedure' // 作業手順の問題
   | 'human' // ヒューマンエラー

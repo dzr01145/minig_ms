@@ -62,18 +62,18 @@ export function ReportForm({ onSubmit, onCancel }: ReportFormProps) {
 
   const analyzeWithAI = async () => {
     if (!formData.description) return;
-    
+
     setIsAnalyzing(true);
     // AI分析のシミュレーション（実際はGemini APIを呼び出す）
     await new Promise(resolve => setTimeout(resolve, 1500));
-    
+
     // 簡易的な自動判定ロジック
     let suggestedType: AccidentType = 'other';
     let suggestedSeverity: SeverityLevel = 'medium';
     const measures: string[] = [];
-    
+
     const desc = formData.description.toLowerCase();
-    
+
     if (desc.includes('墜落') || desc.includes('転落') || desc.includes('落ち') || desc.includes('滑') || desc.includes('手すり')) {
       suggestedType = 'fall';
       measures.push('手すり・防護柵の点検強化');
@@ -92,13 +92,13 @@ export function ReportForm({ onSubmit, onCancel }: ReportFormProps) {
       measures.push('5S活動の強化');
       measures.push('通路の整備');
     }
-    
+
     if (desc.includes('死亡') || desc.includes('重傷') || desc.includes('危うく')) {
       suggestedSeverity = 'high';
     } else if (desc.includes('軽傷') || desc.includes('かすり')) {
       suggestedSeverity = 'low';
     }
-    
+
     setAiSuggestion({
       accidentType: suggestedType,
       severity: suggestedSeverity,
@@ -154,7 +154,7 @@ export function ReportForm({ onSubmit, onCancel }: ReportFormProps) {
         {/* ヘッダー */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">ヒヤリハット報告</h2>
+            <h2 className="text-xl font-bold text-gray-900">ヒヤリハット、災害報告</h2>
             <p className="text-gray-600 text-sm">安全のために、気づいたことを報告してください</p>
           </div>
           <button
@@ -170,19 +170,17 @@ export function ReportForm({ onSubmit, onCancel }: ReportFormProps) {
           {[1, 2, 3, 4].map((s) => (
             <React.Fragment key={s}>
               <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                  step >= s
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= s
                     ? 'bg-primary-600 text-white'
                     : 'bg-gray-200 text-gray-600'
-                }`}
+                  }`}
               >
                 {step > s ? <CheckCircle className="w-5 h-5" /> : s}
               </div>
               {s < 4 && (
                 <div
-                  className={`flex-1 h-1 mx-2 ${
-                    step > s ? 'bg-primary-600' : 'bg-gray-200'
-                  }`}
+                  className={`flex-1 h-1 mx-2 ${step > s ? 'bg-primary-600' : 'bg-gray-200'
+                    }`}
                 />
               )}
             </React.Fragment>
@@ -280,21 +278,47 @@ export function ReportForm({ onSubmit, onCancel }: ReportFormProps) {
               <label className="label">
                 事故の型 <span className="text-danger-500">*</span>
               </label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                {Object.entries(ACCIDENT_TYPE_LABELS).map(([key, label]) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => handleChange('accidentType', key)}
-                    className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
-                      formData.accidentType === key
+              <div className="space-y-3">
+                {/* 主要な事故型 */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {(['fall', 'caught', 'flying', 'trip'] as AccidentType[]).map((key) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => handleChange('accidentType', key)}
+                      className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${formData.accidentType === key
+                          ? 'border-primary-500 bg-primary-50 text-primary-700'
+                          : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                    >
+                      {ACCIDENT_TYPE_LABELS[key]}
+                    </button>
+                  ))}
+                </div>
+
+                {/* その他の事故型（プルダウン） */}
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">その他の分類</label>
+                  <select
+                    value={['fall', 'caught', 'flying', 'trip'].includes(formData.accidentType as string) ? '' : formData.accidentType}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        handleChange('accidentType', e.target.value);
+                      }
+                    }}
+                    className={`select ${!['fall', 'caught', 'flying', 'trip'].includes(formData.accidentType as string) && formData.accidentType
                         ? 'border-primary-500 bg-primary-50 text-primary-700'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
+                        : ''
+                      }`}
                   >
-                    {label}
-                  </button>
-                ))}
+                    <option value="">その他の分類を選択...</option>
+                    {Object.entries(ACCIDENT_TYPE_LABELS)
+                      .filter(([key]) => !['fall', 'caught', 'flying', 'trip'].includes(key))
+                      .map(([key, label]) => (
+                        <option key={key} value={key}>{label}</option>
+                      ))}
+                  </select>
+                </div>
               </div>
             </div>
 
@@ -402,15 +426,14 @@ export function ReportForm({ onSubmit, onCancel }: ReportFormProps) {
                     key={key}
                     type="button"
                     onClick={() => handleChange('severityLevel', key)}
-                    className={`p-4 rounded-lg border-2 text-left transition-all ${
-                      formData.severityLevel === key
+                    className={`p-4 rounded-lg border-2 text-left transition-all ${formData.severityLevel === key
                         ? key === 'high'
                           ? 'border-danger-500 bg-danger-50'
                           : key === 'medium'
-                          ? 'border-warning-500 bg-warning-50'
-                          : 'border-success-500 bg-success-50'
+                            ? 'border-warning-500 bg-warning-50'
+                            : 'border-success-500 bg-success-50'
                         : 'border-gray-200 hover:border-gray-300'
-                    }`}
+                      }`}
                   >
                     <div className="font-medium">{label.split('（')[0]}</div>
                     <div className="text-xs text-gray-600 mt-1">
