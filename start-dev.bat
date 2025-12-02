@@ -1,0 +1,3 @@
+@echo off
+echo Starting Vite development server...
+node node_modules\vite\bin\vite.js

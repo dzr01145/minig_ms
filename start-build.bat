@@ -1,0 +1,3 @@
+@echo off
+echo Building application...
+node node_modules\typescript\bin\tsc && node node_modules\vite\bin\vite.js build
