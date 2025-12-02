@@ -38,12 +38,28 @@ interface DashboardProps {
   onNavigate: (page: string) => void;
 }
 
-const COLORS = {
-  fall: '#ef4444',
-  caught: '#f97316',
-  flying: '#eab308',
-  trip: '#22c55e',
-  other: '#6b7280',
+const COLORS: Record<AccidentType, string> = {
+  fall: '#ef4444', // Red
+  caught: '#f97316', // Orange
+  flying: '#eab308', // Yellow
+  trip: '#22c55e', // Green
+  crash: '#06b6d4', // Cyan
+  collapse: '#3b82f6', // Blue
+  hit_by: '#6366f1', // Indigo
+  cut_abrasion: '#8b5cf6', // Violet
+  step_on: '#d946ef', // Fuchsia
+  drown: '#f43f5e', // Rose
+  contact_temp: '#f59e0b', // Amber
+  contact_harmful: '#84cc16', // Lime
+  electric_shock: '#10b981', // Emerald
+  explosion: '#14b8a6', // Teal
+  burst: '#0ea5e9', // Sky
+  fire: '#ef4444', // Red (same as fall/danger)
+  traffic_road: '#64748b', // Slate
+  traffic_other: '#71717a', // Zinc
+  reaction: '#a1a1aa', // Zinc light
+  other: '#9ca3af', // Gray
+  unclassifiable: '#d1d5db', // Gray light
 };
 
 const SEVERITY_COLORS = {
@@ -57,11 +73,11 @@ export function Dashboard({ reports, onNavigate }: DashboardProps) {
   const totalReports = reports.length;
   const thisMonth = new Date().toISOString().substring(0, 7);
   const thisMonthReports = reports.filter(r => r.occurredAt.substring(0, 7) === thisMonth).length;
-  
+
   const lastMonth = new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().substring(0, 7);
   const lastMonthReports = reports.filter(r => r.occurredAt.substring(0, 7) === lastMonth).length;
-  
-  const monthChange = lastMonthReports > 0 
+
+  const monthChange = lastMonthReports > 0
     ? ((thisMonthReports - lastMonthReports) / lastMonthReports * 100).toFixed(1)
     : '0';
 
@@ -252,10 +268,10 @@ export function Dashboard({ reports, onNavigate }: DashboardProps) {
                 <XAxis dataKey="month" />
                 <YAxis allowDecimals={false} />
                 <Tooltip />
-                <Line 
-                  type="monotone" 
-                  dataKey="count" 
-                  stroke="#3b82f6" 
+                <Line
+                  type="monotone"
+                  dataKey="count"
+                  stroke="#3b82f6"
                   strokeWidth={2}
                   dot={{ fill: '#3b82f6' }}
                   name="件数"
@@ -352,7 +368,7 @@ export function Dashboard({ reports, onNavigate }: DashboardProps) {
                   </td>
                   <td className="py-3 px-4 text-sm">{LOCATION_LABELS[report.location]}</td>
                   <td className="py-3 px-4 text-sm">
-                    <span 
+                    <span
                       className="inline-flex items-center gap-1"
                       style={{ color: COLORS[report.accidentType] }}
                     >
@@ -361,25 +377,23 @@ export function Dashboard({ reports, onNavigate }: DashboardProps) {
                     </span>
                   </td>
                   <td className="py-3 px-4 text-sm">
-                    <span className={`badge ${
-                      report.severityLevel === 'high' ? 'bg-danger-100 text-danger-800' :
-                      report.severityLevel === 'medium' ? 'bg-warning-100 text-warning-800' :
-                      'bg-success-100 text-success-800'
-                    }`}>
+                    <span className={`badge ${report.severityLevel === 'high' ? 'bg-danger-100 text-danger-800' :
+                        report.severityLevel === 'medium' ? 'bg-warning-100 text-warning-800' :
+                          'bg-success-100 text-success-800'
+                      }`}>
                       {report.severityLevel === 'high' ? '重大' :
-                       report.severityLevel === 'medium' ? '中程度' : '軽微'}
+                        report.severityLevel === 'medium' ? '中程度' : '軽微'}
                     </span>
                   </td>
                   <td className="py-3 px-4 text-sm">
-                    <span className={`badge ${
-                      report.status === 'new' ? 'bg-blue-100 text-blue-800' :
-                      report.status === 'reviewing' ? 'bg-yellow-100 text-yellow-800' :
-                      report.status === 'resolved' ? 'bg-green-100 text-green-800' :
-                      'bg-purple-100 text-purple-800'
-                    }`}>
+                    <span className={`badge ${report.status === 'new' ? 'bg-blue-100 text-blue-800' :
+                        report.status === 'reviewing' ? 'bg-yellow-100 text-yellow-800' :
+                          report.status === 'resolved' ? 'bg-green-100 text-green-800' :
+                            'bg-purple-100 text-purple-800'
+                      }`}>
                       {report.status === 'new' ? '新規' :
-                       report.status === 'reviewing' ? '対応中' :
-                       report.status === 'resolved' ? '解決済' : 'RA連携'}
+                        report.status === 'reviewing' ? '対応中' :
+                          report.status === 'resolved' ? '解決済' : 'RA連携'}
                     </span>
                   </td>
                 </tr>
