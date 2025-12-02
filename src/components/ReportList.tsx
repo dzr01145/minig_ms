@@ -19,6 +19,9 @@ import {
   AccidentType,
   Location,
   SeverityLevel,
+  ReportType,
+  REPORT_TYPE_LABELS,
+  REPORT_TYPE_COLORS,
 } from '../types';
 
 interface ReportListProps {
@@ -42,7 +45,7 @@ const STATUS_COLORS: Record<HiyariHatReport['status'], string> = {
 };
 
 export function ReportList({ reports, onSelectReport, onUpdateStatus }: ReportListProps) {
-  const [filter, setFilter] = useState<ReportFilter>({});
+  const [filter, setFilter] = useState<ReportFilter & { type?: ReportType }>({});
   const [showFilters, setShowFilters] = useState(false);
   const [sortField, setSortField] = useState<'occurredAt' | 'severityLevel' | 'status'>('occurredAt');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -59,6 +62,9 @@ export function ReportList({ reports, onSelectReport, onUpdateStatus }: ReportLi
         r.reporterName.toLowerCase().includes(text) ||
         r.locationDetail?.toLowerCase().includes(text)
       );
+    }
+    if (filter.type) {
+      result = result.filter(r => r.type === filter.type);
     }
     if (filter.accidentType) {
       result = result.filter(r => r.accidentType === filter.accidentType);
@@ -177,6 +183,19 @@ export function ReportList({ reports, onSelectReport, onUpdateStatus }: ReportLi
               </div>
             </div>
             <div>
+              <label className="label">報告種別</label>
+              <select
+                value={filter.type || ''}
+                onChange={(e) => setFilter(prev => ({ ...prev, type: e.target.value as ReportType || undefined }))}
+                className="select"
+              >
+                <option value="">すべて</option>
+                {Object.entries(REPORT_TYPE_LABELS).map(([key, label]) => (
+                  <option key={key} value={key}>{label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
               <label className="label">事故の型</label>
               <select
                 value={filter.accidentType || ''}
@@ -265,6 +284,7 @@ export function ReportList({ reports, onSelectReport, onUpdateStatus }: ReportLi
                     <SortIcon field="occurredAt" />
                   </div>
                 </th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">種別</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">場所</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">事故の型</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">概要</th>
@@ -304,6 +324,11 @@ export function ReportList({ reports, onSelectReport, onUpdateStatus }: ReportLi
                     </span>
                   </td>
                   <td className="py-3 px-4 text-sm">
+                    <span className={`badge ${REPORT_TYPE_COLORS[report.type || 'near_miss']}`}>
+                      {REPORT_TYPE_LABELS[report.type || 'near_miss']}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4 text-sm">
                     {LOCATION_LABELS[report.location]}
                     {report.locationDetail && (
                       <br />
@@ -314,12 +339,11 @@ export function ReportList({ reports, onSelectReport, onUpdateStatus }: ReportLi
                   </td>
                   <td className="py-3 px-4 text-sm">
                     <span className="inline-flex items-center gap-1">
-                      <AlertTriangle className={`w-3 h-3 ${
-                        report.accidentType === 'fall' ? 'text-red-500' :
+                      <AlertTriangle className={`w-3 h-3 ${report.accidentType === 'fall' ? 'text-red-500' :
                         report.accidentType === 'caught' ? 'text-orange-500' :
-                        report.accidentType === 'flying' ? 'text-yellow-500' :
-                        'text-gray-500'
-                      }`} />
+                          report.accidentType === 'flying' ? 'text-yellow-500' :
+                            'text-gray-500'
+                        }`} />
                       {ACCIDENT_TYPE_LABELS[report.accidentType]}
                     </span>
                   </td>
@@ -327,11 +351,10 @@ export function ReportList({ reports, onSelectReport, onUpdateStatus }: ReportLi
                     <p className="truncate">{report.description}</p>
                   </td>
                   <td className="py-3 px-4 text-sm">
-                    <span className={`badge ${
-                      report.severityLevel === 'high' ? 'bg-danger-100 text-danger-800' :
+                    <span className={`badge ${report.severityLevel === 'high' ? 'bg-danger-100 text-danger-800' :
                       report.severityLevel === 'medium' ? 'bg-warning-100 text-warning-800' :
-                      'bg-success-100 text-success-800'
-                    }`}>
+                        'bg-success-100 text-success-800'
+                      }`}>
                       {SEVERITY_LABELS[report.severityLevel].split('（')[0]}
                     </span>
                   </td>
@@ -400,6 +423,14 @@ export function ReportList({ reports, onSelectReport, onUpdateStatus }: ReportLi
                   </p>
                 </div>
                 <div>
+                  <label className="text-sm text-gray-500">種別</label>
+                  <p className="font-medium">
+                    <span className={`badge ${REPORT_TYPE_COLORS[selectedReport.type || 'near_miss']}`}>
+                      {REPORT_TYPE_LABELS[selectedReport.type || 'near_miss']}
+                    </span>
+                  </p>
+                </div>
+                <div>
                   <label className="text-sm text-gray-500">事故の型</label>
                   <p className="font-medium">{ACCIDENT_TYPE_LABELS[selectedReport.accidentType]}</p>
                 </div>
@@ -410,11 +441,10 @@ export function ReportList({ reports, onSelectReport, onUpdateStatus }: ReportLi
                 <div>
                   <label className="text-sm text-gray-500">重篤度</label>
                   <p>
-                    <span className={`badge ${
-                      selectedReport.severityLevel === 'high' ? 'bg-danger-100 text-danger-800' :
+                    <span className={`badge ${selectedReport.severityLevel === 'high' ? 'bg-danger-100 text-danger-800' :
                       selectedReport.severityLevel === 'medium' ? 'bg-warning-100 text-warning-800' :
-                      'bg-success-100 text-success-800'
-                    }`}>
+                        'bg-success-100 text-success-800'
+                      }`}>
                       {SEVERITY_LABELS[selectedReport.severityLevel]}
                     </span>
                   </p>

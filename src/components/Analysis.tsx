@@ -36,6 +36,8 @@ import {
   LOCATION_LABELS,
   CAUSE_LABELS,
   AccidentType,
+  ReportType,
+  REPORT_TYPE_LABELS,
 } from '../types';
 
 interface AnalysisProps {
@@ -54,37 +56,46 @@ const CHART_COLORS = ['#3b82f6', '#ef4444', '#22c55e', '#f59e0b', '#8b5cf6', '#e
 
 export function Analysis({ reports }: AnalysisProps) {
   const [period, setPeriod] = useState<'all' | '6months' | '3months' | '1month'>('all');
+  const [reportType, setReportType] = useState<ReportType | 'all'>('all');
 
-  // 期間でフィルタリング
+  // 期間と種別でフィルタリング
   const filteredReports = useMemo(() => {
-    if (period === 'all') return reports;
-    
+    let result = reports;
+
+    // 種別フィルタ
+    if (reportType !== 'all') {
+      result = result.filter(r => r.type === reportType);
+    }
+
+    // 期間フィルタ
+    if (period === 'all') return result;
+
     const now = new Date();
     const months = period === '6months' ? 6 : period === '3months' ? 3 : 1;
     const cutoff = new Date(now.getFullYear(), now.getMonth() - months, now.getDate());
-    
-    return reports.filter(r => new Date(r.occurredAt) >= cutoff);
-  }, [reports, period]);
+
+    return result.filter(r => new Date(r.occurredAt) >= cutoff);
+  }, [reports, period, reportType]);
 
   // 事故の型別トレンド（月別）
   const monthlyTrendData = useMemo(() => {
     const months = new Map<string, Record<string, number>>();
     const now = new Date();
-    
+
     // 過去6ヶ月分の枠を作成
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const key = d.toISOString().substring(0, 7);
       months.set(key, { fall: 0, caught: 0, flying: 0, trip: 0, other: 0 });
     }
-    
+
     filteredReports.forEach(r => {
       const month = r.occurredAt.substring(0, 7);
       if (months.has(month)) {
         months.get(month)![r.accidentType]++;
       }
     });
-    
+
     return Array.from(months.entries()).map(([month, data]) => ({
       month: month.substring(5) + '月',
       ...data,
@@ -94,14 +105,14 @@ export function Analysis({ reports }: AnalysisProps) {
   // 場所×事故の型クロス集計
   const locationAccidentCross = useMemo(() => {
     const cross = new Map<string, Record<string, number>>();
-    
+
     filteredReports.forEach(r => {
       if (!cross.has(r.location)) {
         cross.set(r.location, { fall: 0, caught: 0, flying: 0, trip: 0, other: 0 });
       }
       cross.get(r.location)![r.accidentType]++;
     });
-    
+
     return Array.from(cross.entries())
       .map(([location, data]) => ({
         location: LOCATION_LABELS[location as keyof typeof LOCATION_LABELS],
@@ -130,24 +141,24 @@ export function Analysis({ reports }: AnalysisProps) {
   const dayOfWeekData = useMemo(() => {
     const days = ['日', '月', '火', '水', '木', '金', '土'];
     const counts = days.map(() => 0);
-    
+
     filteredReports.forEach(r => {
       const day = new Date(r.occurredAt).getDay();
       counts[day]++;
     });
-    
+
     return days.map((name, i) => ({ name, count: counts[i] }));
   }, [filteredReports]);
 
   // 時間帯別分析
   const hourlyData = useMemo(() => {
     const hours = Array(24).fill(0);
-    
+
     filteredReports.forEach(r => {
       const hour = new Date(r.occurredAt).getHours();
       hours[hour]++;
     });
-    
+
     return [
       { name: '6-9時', count: hours.slice(6, 9).reduce((a, b) => a + b, 0) },
       { name: '9-12時', count: hours.slice(9, 12).reduce((a, b) => a + b, 0) },
@@ -160,12 +171,12 @@ export function Analysis({ reports }: AnalysisProps) {
   // レーダーチャート用データ（リスク評価）
   const riskRadarData = useMemo(() => {
     const accidentTypes = ['fall', 'caught', 'flying', 'trip'] as const;
-    
+
     return accidentTypes.map(type => {
       const typeReports = filteredReports.filter(r => r.accidentType === type);
       const total = typeReports.length;
       const highSeverity = typeReports.filter(r => r.severityLevel === 'high').length;
-      
+
       return {
         type: ACCIDENT_TYPE_LABELS[type],
         件数: total,
@@ -177,44 +188,44 @@ export function Analysis({ reports }: AnalysisProps) {
   // AI洞察の生成
   const aiInsights = useMemo(() => {
     const insights: string[] = [];
-    
+
     // 最も多い事故の型
     const typeCounts = Object.entries(ACCIDENT_TYPE_LABELS).map(([key]) => ({
       type: key as AccidentType,
       count: filteredReports.filter(r => r.accidentType === key).length,
     })).sort((a, b) => b.count - a.count);
-    
+
     if (typeCounts[0]?.count > 0) {
       insights.push(`「${ACCIDENT_TYPE_LABELS[typeCounts[0].type]}」が最も多く報告されています（${typeCounts[0].count}件）。重点的な対策を検討してください。`);
     }
-    
+
     // 重大ヒヤリの傾向
     const highSeverityCount = filteredReports.filter(r => r.severityLevel === 'high').length;
     if (highSeverityCount > 0) {
       const highSeverityRate = ((highSeverityCount / filteredReports.length) * 100).toFixed(1);
       insights.push(`重大ヒヤリハットが${highSeverityCount}件（${highSeverityRate}%）報告されています。リスクアセスメント（RA）への連携を推奨します。`);
     }
-    
+
     // 場所別の傾向
     const locationCounts = Object.entries(LOCATION_LABELS).map(([key]) => ({
       location: key,
       count: filteredReports.filter(r => r.location === key).length,
     })).sort((a, b) => b.count - a.count);
-    
+
     if (locationCounts[0]?.count >= 3) {
       insights.push(`「${LOCATION_LABELS[locationCounts[0].location as keyof typeof LOCATION_LABELS]}」での発生が集中しています。現場環境の見直しを検討してください。`);
     }
-    
+
     // 原因別の傾向
     const causeCounts = Object.entries(CAUSE_LABELS).map(([key]) => ({
       cause: key,
       count: filteredReports.filter(r => r.cause === key).length,
     })).sort((a, b) => b.count - a.count);
-    
+
     if (causeCounts[0]?.count >= 2) {
       insights.push(`原因として「${CAUSE_LABELS[causeCounts[0].cause as keyof typeof CAUSE_LABELS]}」が多く見られます。根本原因の分析と対策が必要です。`);
     }
-    
+
     return insights;
   }, [filteredReports]);
 
@@ -227,6 +238,16 @@ export function Analysis({ reports }: AnalysisProps) {
           <p className="text-gray-600">ヒヤリハット報告の傾向分析</p>
         </div>
         <div className="flex items-center gap-4">
+          <select
+            value={reportType}
+            onChange={(e) => setReportType(e.target.value as ReportType | 'all')}
+            className="select w-40"
+          >
+            <option value="all">全種別</option>
+            {Object.entries(REPORT_TYPE_LABELS).map(([key, label]) => (
+              <option key={key} value={key}>{label}</option>
+            ))}
+          </select>
           <select
             value={period}
             onChange={(e) => setPeriod(e.target.value as typeof period)}
@@ -249,9 +270,9 @@ export function Analysis({ reports }: AnalysisProps) {
         <div className="stat-card">
           <p className="text-sm text-gray-600">分析対象期間</p>
           <p className="text-2xl font-bold">
-            {period === 'all' ? '全期間' : 
-             period === '6months' ? '過去6ヶ月' :
-             period === '3months' ? '過去3ヶ月' : '過去1ヶ月'}
+            {period === 'all' ? '全期間' :
+              period === '6months' ? '過去6ヶ月' :
+                period === '3months' ? '過去3ヶ月' : '過去1ヶ月'}
           </p>
         </div>
         <div className="stat-card">

@@ -25,6 +25,8 @@ import {
   CAUSE_LABELS,
   UserRole,
   USER_ROLE_LABELS,
+  ReportType,
+  REPORT_TYPE_LABELS,
 } from '../types';
 
 interface ReportFormProps {
@@ -35,6 +37,7 @@ interface ReportFormProps {
 export function ReportForm({ onSubmit, onCancel }: ReportFormProps) {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
+    type: 'near_miss' as ReportType,
     occurredAt: new Date().toISOString().slice(0, 16),
     location: '' as Location | '',
     locationDetail: '',
@@ -123,6 +126,7 @@ export function ReportForm({ onSubmit, onCancel }: ReportFormProps) {
     const now = new Date().toISOString();
     const report: HiyariHatReport = {
       id: uuidv4(),
+      type: formData.type as ReportType,
       reportDate: now.split('T')[0],
       occurredAt: formData.occurredAt,
       location: formData.location as Location,
@@ -171,8 +175,8 @@ export function ReportForm({ onSubmit, onCancel }: ReportFormProps) {
             <React.Fragment key={s}>
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= s
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-gray-200 text-gray-600'
+                  ? 'bg-primary-600 text-white'
+                  : 'bg-gray-200 text-gray-600'
                   }`}
               >
                 {step > s ? <CheckCircle className="w-5 h-5" /> : s}
@@ -198,6 +202,29 @@ export function ReportForm({ onSubmit, onCancel }: ReportFormProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="label">
+                  報告種別 <span className="text-danger-500">*</span>
+                </label>
+                <div className="flex gap-2">
+                  {Object.entries(REPORT_TYPE_LABELS).map(([key, label]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => handleChange('type', key)}
+                      className={`flex-1 p-2 rounded-lg border-2 text-sm font-medium transition-all ${formData.type === key
+                        ? key === 'accident'
+                          ? 'border-red-500 bg-red-50 text-red-700'
+                          : 'border-blue-500 bg-blue-50 text-blue-700'
+                        : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="label">
                   発生日時 <span className="text-danger-500">*</span>
                 </label>
                 <input
@@ -207,7 +234,9 @@ export function ReportForm({ onSubmit, onCancel }: ReportFormProps) {
                   className="input"
                 />
               </div>
+            </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="label">
                   発生場所 <span className="text-danger-500">*</span>
@@ -287,8 +316,8 @@ export function ReportForm({ onSubmit, onCancel }: ReportFormProps) {
                       type="button"
                       onClick={() => handleChange('accidentType', key)}
                       className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${formData.accidentType === key
-                          ? 'border-primary-500 bg-primary-50 text-primary-700'
-                          : 'border-gray-200 hover:border-gray-300'
+                        ? 'border-primary-500 bg-primary-50 text-primary-700'
+                        : 'border-gray-200 hover:border-gray-300'
                         }`}
                     >
                       {ACCIDENT_TYPE_LABELS[key]}
@@ -307,8 +336,8 @@ export function ReportForm({ onSubmit, onCancel }: ReportFormProps) {
                       }
                     }}
                     className={`select ${!['fall', 'caught', 'flying', 'trip'].includes(formData.accidentType as string) && formData.accidentType
-                        ? 'border-primary-500 bg-primary-50 text-primary-700'
-                        : ''
+                      ? 'border-primary-500 bg-primary-50 text-primary-700'
+                      : ''
                       }`}
                   >
                     <option value="">その他の分類を選択...</option>
@@ -420,6 +449,11 @@ export function ReportForm({ onSubmit, onCancel }: ReportFormProps) {
               <label className="label">
                 重篤度の評価 <span className="text-danger-500">*</span>
               </label>
+              <p className="text-sm text-gray-500 mb-2">
+                {formData.type === 'accident'
+                  ? '※実際の被害の程度を選択してください'
+                  : '※もし災害になっていたら想定される被害の程度を選択してください'}
+              </p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {Object.entries(SEVERITY_LABELS).map(([key, label]) => (
                   <button
@@ -427,12 +461,12 @@ export function ReportForm({ onSubmit, onCancel }: ReportFormProps) {
                     type="button"
                     onClick={() => handleChange('severityLevel', key)}
                     className={`p-4 rounded-lg border-2 text-left transition-all ${formData.severityLevel === key
-                        ? key === 'high'
-                          ? 'border-danger-500 bg-danger-50'
-                          : key === 'medium'
-                            ? 'border-warning-500 bg-warning-50'
-                            : 'border-success-500 bg-success-50'
-                        : 'border-gray-200 hover:border-gray-300'
+                      ? key === 'high'
+                        ? 'border-danger-500 bg-danger-50'
+                        : key === 'medium'
+                          ? 'border-warning-500 bg-warning-50'
+                          : 'border-success-500 bg-success-50'
+                      : 'border-gray-200 hover:border-gray-300'
                       }`}
                   >
                     <div className="font-medium">{label.split('（')[0]}</div>

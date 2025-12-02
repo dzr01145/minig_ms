@@ -40,6 +40,7 @@ function App() {
   const [successMessage, setSuccessMessage] = useState('');
   const [showApiSettings, setShowApiSettings] = useState(false);
   const [showLogViewer, setShowLogViewer] = useState(false);
+  const [editingPlanItem, setEditingPlanItem] = useState<PlanItem | undefined>(undefined);
 
   const handleNavigate = useCallback((page: string) => {
     setCurrentPage(page);
@@ -60,7 +61,7 @@ function App() {
   }, [setReports]);
 
   const handleUpdateStatus = useCallback((id: string, status: HiyariHatReport['status']) => {
-    setReports(prev => prev.map(r => 
+    setReports(prev => prev.map(r =>
       r.id === id ? { ...r, status, updatedAt: new Date().toISOString() } : r
     ));
   }, [setReports]);
@@ -71,7 +72,7 @@ function App() {
   }, [setRAItems]);
 
   const handleUpdateRAItem = useCallback((item: RiskAssessmentItem) => {
-    setRAItems(prev => prev.map(i => 
+    setRAItems(prev => prev.map(i =>
       i.id === item.id ? { ...item, updatedAt: new Date().toISOString() } : i
     ));
   }, [setRAItems]);
@@ -83,23 +84,24 @@ function App() {
       planItems: [item, ...prev.planItems.filter(i => i.id !== item.id)],
       updatedAt: new Date().toISOString()
     }));
-    showSuccessModal('計画項目を保存しました', 'plan');
+    showSuccessModal('計画項目を保存しました', 'plan-list');
+    setEditingPlanItem(undefined);
   }, [setAnnualPlan]);
 
   const handleUpdatePlanProgress = useCallback((itemId: string, month: number, completed: boolean) => {
     setAnnualPlan(prev => ({
       ...prev,
-      planItems: prev.planItems.map(item => 
-        item.id === itemId 
+      planItems: prev.planItems.map(item =>
+        item.id === itemId
           ? {
-              ...item,
-              schedule: item.schedule.map(s => 
-                s.month === month 
-                  ? { ...s, completed, completedDate: completed ? new Date().toISOString().split('T')[0] : undefined }
-                  : s
-              ),
-              updatedAt: new Date().toISOString()
-            }
+            ...item,
+            schedule: item.schedule.map(s =>
+              s.month === month
+                ? { ...s, completed, completedDate: completed ? new Date().toISOString().split('T')[0] : undefined }
+                : s
+            ),
+            updatedAt: new Date().toISOString()
+          }
           : item
       ),
       updatedAt: new Date().toISOString()
@@ -119,17 +121,17 @@ function App() {
   }, [setMeetings]);
 
   const handleUpdateActionStatus = useCallback((meetingId: string, actionId: string, status: 'pending' | 'in_progress' | 'completed') => {
-    setMeetings(prev => prev.map(m => 
-      m.id === meetingId 
+    setMeetings(prev => prev.map(m =>
+      m.id === meetingId
         ? {
-            ...m,
-            actionItems: m.actionItems.map(a => 
-              a.id === actionId 
-                ? { ...a, status, completedDate: status === 'completed' ? new Date().toISOString().split('T')[0] : undefined }
-                : a
-            ),
-            updatedAt: new Date().toISOString()
-          }
+          ...m,
+          actionItems: m.actionItems.map(a =>
+            a.id === actionId
+              ? { ...a, status, completedDate: status === 'completed' ? new Date().toISOString().split('T')[0] : undefined }
+              : a
+          ),
+          updatedAt: new Date().toISOString()
+        }
         : m
     ));
   }, [setMeetings]);
@@ -162,15 +164,15 @@ function App() {
         return <Dashboard reports={reports} onNavigate={handleNavigate} />;
       case 'report':
         return (
-          <ReportForm 
-            onSubmit={handleSubmitReport} 
-            onCancel={() => setCurrentPage('dashboard')} 
+          <ReportForm
+            onSubmit={handleSubmitReport}
+            onCancel={() => setCurrentPage('dashboard')}
           />
         );
       case 'list':
         return (
-          <ReportList 
-            reports={reports} 
+          <ReportList
+            reports={reports}
             onSelectReport={(report) => console.log('Selected:', report)}
             onUpdateStatus={handleUpdateStatus}
           />
@@ -201,7 +203,10 @@ function App() {
         return (
           <PlanList
             items={annualPlan.planItems}
-            onSelectItem={(item) => console.log('Selected Plan:', item)}
+            onSelectItem={(item) => {
+              setEditingPlanItem(item);
+              setCurrentPage('plan-edit');
+            }}
             onUpdateProgress={handleUpdatePlanProgress}
           />
         );
@@ -210,6 +215,17 @@ function App() {
           <PlanForm
             onSubmit={handleSubmitPlanItem}
             onCancel={() => setCurrentPage('plan')}
+          />
+        );
+      case 'plan-edit':
+        return (
+          <PlanForm
+            initialData={editingPlanItem}
+            onSubmit={handleSubmitPlanItem}
+            onCancel={() => {
+              setEditingPlanItem(undefined);
+              setCurrentPage('plan-list');
+            }}
           />
         );
       case 'plan-gantt':
@@ -267,8 +283,8 @@ function App() {
 
   return (
     <>
-      <Layout 
-        currentPage={currentPage} 
+      <Layout
+        currentPage={currentPage}
         onNavigate={handleNavigate}
         onOpenSettings={() => setShowApiSettings(true)}
       >
@@ -290,8 +306,8 @@ function App() {
 
       {/* APIキー設定モーダル */}
       {showApiSettings && (
-        <ApiKeySettings 
-          onClose={() => setShowApiSettings(false)} 
+        <ApiKeySettings
+          onClose={() => setShowApiSettings(false)}
           onOpenLogViewer={() => {
             setShowApiSettings(false);
             setShowLogViewer(true);

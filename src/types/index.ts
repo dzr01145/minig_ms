@@ -106,6 +106,7 @@ export const CAUSE_LABELS: Record<CauseCategory, string> = {
 // ヒヤリハット報告
 export interface HiyariHatReport {
   id: string;
+  type: ReportType; // 追加
   reportDate: string; // ISO形式
   occurredAt: string; // ISO形式
   location: Location;
@@ -169,6 +170,19 @@ export interface ReportFilter {
   status?: HiyariHatReport['status'];
   searchText?: string;
 }
+
+// 報告種別
+export type ReportType = 'near_miss' | 'accident';
+
+export const REPORT_TYPE_LABELS: Record<ReportType, string> = {
+  near_miss: 'ヒヤリハット',
+  accident: '災害',
+};
+
+export const REPORT_TYPE_COLORS: Record<ReportType, string> = {
+  near_miss: 'bg-blue-100 text-blue-800 border-blue-300',
+  accident: 'bg-red-100 text-red-800 border-red-300',
+};
 
 // ユーザー役割
 export type UserRole = 'worker' | 'manager' | 'executive';
