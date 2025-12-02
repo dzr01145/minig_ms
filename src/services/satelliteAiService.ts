@@ -61,18 +61,73 @@ function storeAccessToken(token: string, expiresIn: number): void {
   localStorage.setItem(ACCESS_TOKEN_EXPIRES_KEY, expiresAt.toString());
 }
 
+// 詳細エラー情報型
+export interface DetailedError {
+  message: string;
+  details: {
+    status?: number;
+    statusText?: string;
+    responseBody?: any;
+    errorCode?: string;
+    errorMessage?: string;
+    requestUrl?: string;
+    requestBody?: any;
+    timestamp: string;
+  };
+}
+
+// エラーを詳細情報付きでスロー
+function throwDetailedError(
+  message: string,
+  status?: number,
+  statusText?: string,
+  responseBody?: any,
+  requestUrl?: string,
+  requestBody?: any
+): never {
+  const error: DetailedError = {
+    message,
+    details: {
+      status,
+      statusText,
+      responseBody,
+      errorCode: responseBody?.error_code,
+      errorMessage: responseBody?.error_msg,
+      requestUrl,
+      requestBody,
+      timestamp: new Date().toISOString()
+    }
+  };
+  
+  console.error('🔴 サテライトAI API エラー詳細:', error);
+  throw new Error(JSON.stringify(error, null, 2));
+}
+
 // 認証API
 async function authenticate(): Promise<string> {
   const apiKey = getSatelliteApiKey();
   const userId = getSatelliteUserId();
   
+  console.log('🔵 サテライトAI 認証開始:', {
+    hasApiKey: !!apiKey,
+    hasUserId: !!userId,
+    apiKeyLength: apiKey?.length,
+    userId: userId
+  });
+  
   if (!apiKey || !userId) {
-    throw new Error('サテライトAI APIキーまたはユーザーIDが設定されていません');
+    throwDetailedError(
+      'サテライトAI APIキーまたはユーザーIDが設定されていません',
+      undefined,
+      undefined,
+      { apiKey: !!apiKey, userId: !!userId }
+    );
   }
   
   // 既存のトークンをチェック
   const stored = getStoredAccessToken();
   if (stored) {
+    console.log('✅ 既存のアクセストークンを使用');
     return stored.token;
   }
   
@@ -81,26 +136,76 @@ async function authenticate(): Promise<string> {
   formData.append('api_key', apiKey);
   formData.append('user_id', userId);
   
-  const response = await fetch(`${SATELLITE_API_BASE}/auth`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded'
-    },
-    body: formData.toString()
+  const requestUrl = `${SATELLITE_API_BASE}/auth`;
+  console.log('🔵 認証リクエスト送信:', {
+    url: requestUrl,
+    userId: userId
   });
   
+  let response: Response;
+  try {
+    response = await fetch(requestUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: formData.toString()
+    });
+  } catch (error) {
+    console.error('🔴 ネットワークエラー:', error);
+    throwDetailedError(
+      `ネットワークエラー: ${error instanceof Error ? error.message : 'Unknown'}`,
+      undefined,
+      undefined,
+      { networkError: error },
+      requestUrl
+    );
+  }
+  
+  console.log('🔵 認証レスポンス:', {
+    status: response.status,
+    statusText: response.statusText,
+    ok: response.ok
+  });
+  
+  let responseBody: any;
+  try {
+    responseBody = await response.json();
+    console.log('🔵 認証レスポンスボディ:', responseBody);
+  } catch (error) {
+    console.error('🔴 JSONパースエラー:', error);
+    throwDetailedError(
+      'レスポンスのJSONパースに失敗',
+      response.status,
+      response.statusText,
+      { parseError: error },
+      requestUrl
+    );
+  }
+  
   if (!response.ok) {
-    throw new Error(`認証エラー: ${response.status}`);
+    throwDetailedError(
+      `認証エラー: HTTPステータス ${response.status}`,
+      response.status,
+      response.statusText,
+      responseBody,
+      requestUrl
+    );
   }
   
-  const data = await response.json();
-  
-  if (data.code !== '0') {
-    throw new Error(`認証エラー: ${data.error_msg || data.error_code || 'Unknown error'}`);
+  if (responseBody.code !== '0') {
+    throwDetailedError(
+      `認証エラー: ${responseBody.error_msg || responseBody.error_code || 'Unknown error'}`,
+      response.status,
+      response.statusText,
+      responseBody,
+      requestUrl
+    );
   }
   
-  storeAccessToken(data.access_token, data.expires_in);
-  return data.access_token;
+  console.log('✅ 認証成功: アクセストークン取得');
+  storeAccessToken(responseBody.access_token, responseBody.expires_in);
+  return responseBody.access_token;
 }
 
 // サテライトAI プラン定義
@@ -271,12 +376,23 @@ export interface SatelliteAskResponse {
 }
 
 export async function ask(request: SatelliteAskRequest): Promise<SatelliteAskResponse> {
+  console.log('🔵 サテライトAI 質問API開始:', {
+    questionLength: request.question.length,
+    usePlan: request.usePlan,
+    hasBoardId: !!request.boardId
+  });
+  
   const accessToken = await authenticate();
   const tenantId = getSatelliteTenantId();
   const userId = getSatelliteUserId();
   
   if (!tenantId || !userId) {
-    throw new Error('テナントIDまたはユーザーIDが設定されていません');
+    throwDetailedError(
+      'テナントIDまたはユーザーIDが設定されていません',
+      undefined,
+      undefined,
+      { tenantId: !!tenantId, userId: !!userId }
+    );
   }
   
   const formData = new URLSearchParams();
@@ -302,40 +418,131 @@ export async function ask(request: SatelliteAskRequest): Promise<SatelliteAskRes
     formData.append('new_conversation', request.newConversation ? 'True' : 'False');
   }
   
-  const response = await fetch(`${SATELLITE_API_BASE}/board/ask`, {
-    method: 'POST',
-    headers: {
-      'Access-Token': accessToken,
-      'Content-Type': 'application/x-www-form-urlencoded'
-    },
-    body: formData.toString()
+  const requestUrl = `${SATELLITE_API_BASE}/board/ask`;
+  const requestBody = Object.fromEntries(formData.entries());
+  
+  console.log('🔵 質問リクエスト送信:', {
+    url: requestUrl,
+    tenantId,
+    userId,
+    usePlan: request.usePlan
   });
   
+  let response: Response;
+  try {
+    response = await fetch(requestUrl, {
+      method: 'POST',
+      headers: {
+        'Access-Token': accessToken,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: formData.toString()
+    });
+  } catch (error) {
+    console.error('🔴 ネットワークエラー:', error);
+    throwDetailedError(
+      `ネットワークエラー: ${error instanceof Error ? error.message : 'Unknown'}`,
+      undefined,
+      undefined,
+      { networkError: error },
+      requestUrl,
+      requestBody
+    );
+  }
+  
+  console.log('🔵 質問レスポンス:', {
+    status: response.status,
+    statusText: response.statusText,
+    ok: response.ok
+  });
+  
+  let responseBody: any;
+  try {
+    responseBody = await response.json();
+    console.log('🔵 質問レスポンスボディ:', responseBody);
+  } catch (error) {
+    console.error('🔴 JSONパースエラー:', error);
+    throwDetailedError(
+      'レスポンスのJSONパースに失敗',
+      response.status,
+      response.statusText,
+      { parseError: error },
+      requestUrl,
+      requestBody
+    );
+  }
+  
   if (!response.ok) {
-    throw new Error(`質問エラー: ${response.status}`);
+    throwDetailedError(
+      `質問エラー: HTTPステータス ${response.status}`,
+      response.status,
+      response.statusText,
+      responseBody,
+      requestUrl,
+      requestBody
+    );
   }
   
-  const data = await response.json();
-  
-  if (data.code !== '0') {
-    throw new Error(`質問エラー: ${data.error_msg || data.error_code}`);
+  if (responseBody.code !== '0') {
+    throwDetailedError(
+      `質問エラー: ${responseBody.error_msg || responseBody.error_code}`,
+      response.status,
+      response.statusText,
+      responseBody,
+      requestUrl,
+      requestBody
+    );
   }
   
-  return data.data;
+  console.log('✅ 質問成功');
+  return responseBody.data;
 }
 
 // 接続テスト
-export async function testConnection(): Promise<{ success: boolean; message: string }> {
+export async function testConnection(): Promise<{ success: boolean; message: string; details?: any }> {
+  console.log('🔵 サテライトAI 接続テスト開始');
+  console.log('🔵 設定情報:', {
+    hasApiKey: !!getSatelliteApiKey(),
+    hasTenantId: !!getSatelliteTenantId(),
+    hasUserId: !!getSatelliteUserId(),
+    apiKeyLength: getSatelliteApiKey()?.length,
+    tenantId: getSatelliteTenantId(),
+    userId: getSatelliteUserId()
+  });
+  
   try {
     const accessToken = await authenticate();
+    console.log('✅ 接続テスト成功');
     return {
       success: true,
-      message: `接続成功: アクセストークン取得済み`
+      message: `接続成功: アクセストークン取得済み (長さ: ${accessToken.length})`,
+      details: {
+        tokenLength: accessToken.length,
+        timestamp: new Date().toISOString()
+      }
     };
   } catch (error) {
+    console.error('🔴 接続テスト失敗:', error);
+    
+    let errorDetails: any = {};
+    let errorMessage = 'Unknown error';
+    
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      try {
+        // エラーメッセージがJSON形式の詳細エラーの場合はパース
+        const parsed = JSON.parse(error.message);
+        errorDetails = parsed.details || {};
+        errorMessage = parsed.message || errorMessage;
+      } catch {
+        // JSON形式でない場合はそのまま使用
+      }
+    }
+    
     return {
       success: false,
-      message: `接続失敗: ${error instanceof Error ? error.message : 'Unknown error'}`
+      message: `接続失敗: ${errorMessage}`,
+      details: errorDetails
     };
   }
 }
