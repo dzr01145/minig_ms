@@ -374,12 +374,33 @@ async function callAI(prompt: string): Promise<string | null> {
 // JSONをパースするヘルパー
 function parseJSONResponse<T>(text: string): T | null {
   try {
-    // ```json ... ``` を除去
+    // マークダウンのコードブロックを除去
+    let jsonStr = text;
     const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-    const jsonStr = jsonMatch ? jsonMatch[1] : text;
-    return JSON.parse(jsonStr.trim());
+    if (jsonMatch) {
+      jsonStr = jsonMatch[1];
+    }
+
+    // 前後の空白を除去
+    jsonStr = jsonStr.trim();
+
+    // JSONとしてパース
+    return JSON.parse(jsonStr);
   } catch (error) {
     console.error('Failed to parse JSON response:', error, text);
+
+    // フォールバック: 最初の中括弧から最後の中括弧までを抽出して試行
+    try {
+      const start = text.indexOf('{');
+      const end = text.lastIndexOf('}');
+      if (start !== -1 && end !== -1 && end > start) {
+        const extracted = text.substring(start, end + 1);
+        return JSON.parse(extracted);
+      }
+    } catch (retryError) {
+      console.error('Retry parsing failed:', retryError);
+    }
+
     return null;
   }
 }
