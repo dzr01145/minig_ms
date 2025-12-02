@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { ReportForm } from './components/ReportForm';
@@ -18,6 +18,7 @@ import { DiagnosisForm } from './components/meeting/DiagnosisForm';
 import { IntegratedDashboard } from './components/IntegratedDashboard';
 import { ApiKeySettings } from './components/ApiKeySettings';
 import { AILogViewer } from './components/AILogViewer';
+import { Login } from './components/Login';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { sampleReports } from './data/sampleData';
 import { sampleRAItems } from './data/raData';
@@ -30,6 +31,7 @@ import { SafetyMeeting, DiagnosisRecord } from './types/meeting';
 import { CheckCircle } from 'lucide-react';
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [reports, setReports] = useLocalStorage<HiyariHatReport[]>('hiyari-hat-reports', sampleReports);
   const [raItems, setRAItems] = useLocalStorage<RiskAssessmentItem[]>('ra-items', sampleRAItems);
@@ -41,6 +43,13 @@ function App() {
   const [showApiSettings, setShowApiSettings] = useState(false);
   const [showLogViewer, setShowLogViewer] = useState(false);
   const [editingPlanItem, setEditingPlanItem] = useState<PlanItem | undefined>(undefined);
+
+  useEffect(() => {
+    const auth = sessionStorage.getItem('isAuthenticated');
+    if (auth === 'true') {
+      setIsAuthenticated(true);
+    }
+  }, []);
 
   const handleNavigate = useCallback((page: string) => {
     setCurrentPage(page);
@@ -280,6 +289,10 @@ function App() {
         );
     }
   };
+
+  if (!isAuthenticated) {
+    return <Login onLogin={() => setIsAuthenticated(true)} />;
+  }
 
   return (
     <>

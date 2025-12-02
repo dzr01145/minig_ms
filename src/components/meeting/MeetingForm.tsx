@@ -10,9 +10,9 @@ import {
   Sparkles,
   Clock
 } from 'lucide-react';
-import { 
-  SafetyMeeting, 
-  AgendaItem, 
+import {
+  SafetyMeeting,
+  AgendaItem,
   ActionItem,
   MEETING_TYPE_LABELS
 } from '../../types/meeting';
@@ -73,7 +73,7 @@ export function MeetingForm({ onSubmit, onCancel, initialData }: MeetingFormProp
   };
 
   const updateAgendaItem = (index: number, field: string, value: string | number) => {
-    setAgendaItems(prev => prev.map((item, i) => 
+    setAgendaItems(prev => prev.map((item, i) =>
       i === index ? { ...item, [field]: value } : item
     ));
   };
@@ -107,7 +107,7 @@ export function MeetingForm({ onSubmit, onCancel, initialData }: MeetingFormProp
   };
 
   const updateActionItem = (index: number, field: string, value: string) => {
-    setActionItems(prev => prev.map((item, i) => 
+    setActionItems(prev => prev.map((item, i) =>
       i === index ? { ...item, [field]: value } : item
     ));
   };
@@ -161,7 +161,7 @@ export function MeetingForm({ onSubmit, onCancel, initialData }: MeetingFormProp
   // AI要約生成（ダミー）
   const generateAISummary = async () => {
     if (agendaItems.length === 0 && decisions.length === 0) return;
-    
+
     setIsGeneratingAI(true);
     await new Promise(resolve => setTimeout(resolve, 1500));
 
@@ -214,7 +214,7 @@ export function MeetingForm({ onSubmit, onCancel, initialData }: MeetingFormProp
       {/* 基本情報 */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-4">
         <h2 className="text-lg font-bold text-gray-900">基本情報</h2>
-        
+
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -261,9 +261,8 @@ export function MeetingForm({ onSubmit, onCancel, initialData }: MeetingFormProp
             value={formData.title}
             onChange={(e) => handleChange('title', e.target.value)}
             placeholder="例: 10月度 定例保安会議"
-            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 ${
-              errors.title ? 'border-danger-500' : 'border-gray-300'
-            }`}
+            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 ${errors.title ? 'border-danger-500' : 'border-gray-300'
+              }`}
           />
           {errors.title && <p className="text-danger-500 text-sm mt-1">{errors.title}</p>}
         </div>
@@ -279,9 +278,8 @@ export function MeetingForm({ onSubmit, onCancel, initialData }: MeetingFormProp
               value={formData.participants}
               onChange={(e) => handleChange('participants', e.target.value)}
               placeholder="例: A社長, 山田, 佐藤（カンマ区切り）"
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 ${
-                errors.participants ? 'border-danger-500' : 'border-gray-300'
-              }`}
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 ${errors.participants ? 'border-danger-500' : 'border-gray-300'
+                }`}
             />
             {errors.participants && <p className="text-danger-500 text-sm mt-1">{errors.participants}</p>}
           </div>
@@ -521,7 +519,22 @@ export function MeetingForm({ onSubmit, onCancel, initialData }: MeetingFormProp
 
       {/* 議事録 */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h2 className="text-lg font-bold text-gray-900 mb-4">議事録</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-gray-900">議事録</h2>
+          <button
+            type="button"
+            onClick={() => {
+              // AI添削のモック機能
+              if (!formData.minutes) return;
+              const corrected = formData.minutes + '\n\n[AI添削]: 誤字脱字を修正し、表現をより明確にしました。';
+              handleChange('minutes', corrected);
+            }}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors"
+          >
+            <Sparkles className="w-4 h-4" />
+            AI添削
+          </button>
+        </div>
         <textarea
           value={formData.minutes}
           onChange={(e) => handleChange('minutes', e.target.value)}
@@ -540,7 +553,14 @@ export function MeetingForm({ onSubmit, onCancel, initialData }: MeetingFormProp
           キャンセル
         </button>
         <button
-          onClick={handleSubmit}
+          onClick={() => {
+            console.log('Save button clicked');
+            console.log('Form Data:', formData);
+            console.log('Agenda Items:', agendaItems);
+            console.log('Decisions:', decisions);
+            console.log('Action Items:', actionItems);
+            handleSubmit();
+          }}
           className="flex items-center gap-2 px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
         >
           <Save className="w-4 h-4" />

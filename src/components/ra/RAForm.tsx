@@ -130,8 +130,8 @@ export function RAForm({ onSubmit, onCancel, hiyariReports = [] }: RAFormProps) 
       possibilityAfter: afterEvaluation.possibilityAfter as Possibility || undefined,
       riskLevelAfter: riskLevelAfter || undefined,
       residualRisk: afterEvaluation.residualRisk || undefined,
-      priority: riskLevelBefore === 'very_worried' ? 'immediate' : 
-               riskLevelBefore === 'worried' ? 'planned' : 'monitor',
+      priority: riskLevelBefore === 'very_worried' ? 'immediate' :
+        riskLevelBefore === 'worried' ? 'planned' : 'monitor',
       status: 'identified',
       linkedHiyariIds: linkedHiyariIds.length > 0 ? linkedHiyariIds : undefined,
       createdAt: now,
@@ -180,13 +180,12 @@ export function RAForm({ onSubmit, onCancel, hiyariReports = [] }: RAFormProps) 
             <React.Fragment key={index}>
               <div className="flex items-center gap-2">
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                    step > index + 1
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step > index + 1
                       ? 'bg-success-600 text-white'
                       : step === index + 1
-                      ? 'bg-primary-600 text-white'
-                      : 'bg-gray-200 text-gray-600'
-                  }`}
+                        ? 'bg-primary-600 text-white'
+                        : 'bg-gray-200 text-gray-600'
+                    }`}
                 >
                   {step > index + 1 ? <CheckCircle className="w-5 h-5" /> : index + 1}
                 </div>
@@ -231,21 +230,47 @@ export function RAForm({ onSubmit, onCancel, hiyariReports = [] }: RAFormProps) 
               <label className="label">
                 事故の型 <span className="text-danger-500">*</span>
               </label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                {Object.entries(ACCIDENT_TYPE_LABELS).slice(0, 5).map(([key, label]) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => handleChange('accidentType', key)}
-                    className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
-                      formData.accidentType === key
+              <div className="space-y-3">
+                {/* 主要な事故型 */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {(['fall', 'caught', 'flying', 'trip'] as AccidentType[]).map((key) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => handleChange('accidentType', key)}
+                      className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${formData.accidentType === key
+                          ? 'border-primary-500 bg-primary-50 text-primary-700'
+                          : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                    >
+                      {ACCIDENT_TYPE_LABELS[key]}
+                    </button>
+                  ))}
+                </div>
+
+                {/* その他の事故型（プルダウン） */}
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">その他の分類</label>
+                  <select
+                    value={['fall', 'caught', 'flying', 'trip'].includes(formData.accidentType as string) ? '' : formData.accidentType}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        handleChange('accidentType', e.target.value);
+                      }
+                    }}
+                    className={`select ${!['fall', 'caught', 'flying', 'trip'].includes(formData.accidentType as string) && formData.accidentType
                         ? 'border-primary-500 bg-primary-50 text-primary-700'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
+                        : ''
+                      }`}
                   >
-                    {label}
-                  </button>
-                ))}
+                    <option value="">その他の分類を選択...</option>
+                    {Object.entries(ACCIDENT_TYPE_LABELS)
+                      .filter(([key]) => !['fall', 'caught', 'flying', 'trip'].includes(key))
+                      .map(([key, label]) => (
+                        <option key={key} value={key}>{label}</option>
+                      ))}
+                  </select>
+                </div>
               </div>
               <p className="text-xs text-gray-500 mt-2">
                 ※ 重点3事故の型：墜落転落、はさまれ・巻き込まれ、飛来・落下
@@ -344,11 +369,10 @@ export function RAForm({ onSubmit, onCancel, hiyariReports = [] }: RAFormProps) 
                       key={key}
                       type="button"
                       onClick={() => handleChange('severityBefore', key)}
-                      className={`w-full p-3 rounded-lg border-2 text-left transition-all ${
-                        formData.severityBefore === key
+                      className={`w-full p-3 rounded-lg border-2 text-left transition-all ${formData.severityBefore === key
                           ? 'border-primary-500 bg-primary-50'
                           : 'border-gray-200 hover:border-gray-300'
-                      }`}
+                        }`}
                     >
                       <div className="font-medium">{label.split('（')[0]}</div>
                       <div className="text-xs text-gray-500">
@@ -369,11 +393,10 @@ export function RAForm({ onSubmit, onCancel, hiyariReports = [] }: RAFormProps) 
                       key={key}
                       type="button"
                       onClick={() => handleChange('possibilityBefore', key)}
-                      className={`w-full p-3 rounded-lg border-2 text-left transition-all ${
-                        formData.possibilityBefore === key
+                      className={`w-full p-3 rounded-lg border-2 text-left transition-all ${formData.possibilityBefore === key
                           ? 'border-primary-500 bg-primary-50'
                           : 'border-gray-200 hover:border-gray-300'
-                      }`}
+                        }`}
                     >
                       <div className="font-medium">{label.split('（')[0]}</div>
                       <div className="text-xs text-gray-500">
@@ -387,19 +410,17 @@ export function RAForm({ onSubmit, onCancel, hiyariReports = [] }: RAFormProps) 
 
             {/* リスクレベル判定結果 */}
             {riskLevelBefore && (
-              <div className={`p-4 rounded-lg border-2 ${
-                riskLevelBefore === 'very_worried' 
+              <div className={`p-4 rounded-lg border-2 ${riskLevelBefore === 'very_worried'
                   ? 'bg-danger-50 border-danger-300'
                   : riskLevelBefore === 'worried'
-                  ? 'bg-warning-50 border-warning-300'
-                  : 'bg-success-50 border-success-300'
-              }`}>
+                    ? 'bg-warning-50 border-warning-300'
+                    : 'bg-success-50 border-success-300'
+                }`}>
                 <div className="flex items-center gap-2">
-                  <AlertTriangle className={`w-5 h-5 ${
-                    riskLevelBefore === 'very_worried' ? 'text-danger-600' :
-                    riskLevelBefore === 'worried' ? 'text-warning-600' :
-                    'text-success-600'
-                  }`} />
+                  <AlertTriangle className={`w-5 h-5 ${riskLevelBefore === 'very_worried' ? 'text-danger-600' :
+                      riskLevelBefore === 'worried' ? 'text-warning-600' :
+                        'text-success-600'
+                    }`} />
                   <span className="font-bold">
                     リスクレベル: {RISK_LEVEL_LABELS[riskLevelBefore]}
                   </span>
@@ -557,13 +578,12 @@ export function RAForm({ onSubmit, onCancel, hiyariReports = [] }: RAFormProps) 
                 </div>
               </div>
               {riskLevelAfter && (
-                <div className={`mt-4 p-3 rounded-lg ${
-                  riskLevelAfter === 'very_worried' 
+                <div className={`mt-4 p-3 rounded-lg ${riskLevelAfter === 'very_worried'
                     ? 'bg-danger-50'
                     : riskLevelAfter === 'worried'
-                    ? 'bg-warning-50'
-                    : 'bg-success-50'
-                }`}>
+                      ? 'bg-warning-50'
+                      : 'bg-success-50'
+                  }`}>
                   低減後リスクレベル: <strong>{RISK_LEVEL_LABELS[riskLevelAfter]}</strong>
                   {riskLevelBefore && riskLevelAfter !== riskLevelBefore && (
                     <span className="ml-2 text-success-600">
@@ -605,13 +625,12 @@ export function RAForm({ onSubmit, onCancel, hiyariReports = [] }: RAFormProps) 
               </div>
               <div>
                 <label className="text-sm text-gray-500">リスクレベル（低減前）</label>
-                <span className={`badge ${
-                  riskLevelBefore === 'very_worried' 
+                <span className={`badge ${riskLevelBefore === 'very_worried'
                     ? 'bg-danger-100 text-danger-800'
                     : riskLevelBefore === 'worried'
-                    ? 'bg-warning-100 text-warning-800'
-                    : 'bg-success-100 text-success-800'
-                }`}>
+                      ? 'bg-warning-100 text-warning-800'
+                      : 'bg-success-100 text-success-800'
+                  }`}>
                   {riskLevelBefore && RISK_LEVEL_LABELS[riskLevelBefore]}
                 </span>
               </div>
@@ -690,9 +709,8 @@ export function RAForm({ onSubmit, onCancel, hiyariReports = [] }: RAFormProps) 
                   onClick={() => importFromHiyari(report)}
                 >
                   <div className="flex items-center gap-2">
-                    <span className={`badge text-xs ${
-                      report.severityLevel === 'high' ? 'bg-danger-100 text-danger-800' : 'bg-warning-100 text-warning-800'
-                    }`}>
+                    <span className={`badge text-xs ${report.severityLevel === 'high' ? 'bg-danger-100 text-danger-800' : 'bg-warning-100 text-warning-800'
+                      }`}>
                       {report.severityLevel === 'high' ? '重大' : '中程度'}
                     </span>
                     <span className="text-sm text-gray-500">
