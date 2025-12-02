@@ -13,6 +13,11 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     strictPort: true,
+    allowedHosts: [
+      '.sandbox.novita.ai',  // Allow all sandbox domains
+      'localhost',
+      '127.0.0.1'
+    ],
     // HMR (Hot Module Replacement) configuration
     // For local development, use default settings
     // For production/remote deployment, uncomment and set clientPort
